@@ -137,6 +137,12 @@ function setupBoard() {
     cards = cards.concat(cards_replace);
 
     $("td").click(selectCard);
+    $("#colorblind_toggle").click(function() {
+        if ($("tbody").hasClass('colorblind'))
+            $("tbody").removeClass('colorblind');
+        else
+            $("tbody").addClass('colorblind');
+    });
     updateBoard();
 }
 
