@@ -187,6 +187,7 @@ function selectCard() {
             }
             var limit = 0;
             if (cards.length==0) {
+                updateBoard();
                 if (noSet())
                     window.alert("no more sets");
             } else {
@@ -203,8 +204,8 @@ function selectCard() {
                         break;
                     }
                 }
+                updateBoard();
             }
-            updateBoard();
 
         }
         currentSet.length = 0;
