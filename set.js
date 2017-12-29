@@ -1,8 +1,11 @@
 var cards = [];
+var emptyCard;
+var currentSet = [];
 var game_width = 4;
 var game_height = 3;
 var board;
-var game = document.getElementById('game');
+//var game = document.getElementById('game');
+var game = $('#game');
 
 function Card() {
     this.color;
@@ -58,7 +61,22 @@ function Card() {
     }
 }
 
+function noSet() {
+    var noSet = true;
+    board.forEach(function(A) {
+        board.forEach(function(B) {
+            board.forEach(function(C) {
+                if (isSet(A,B,C))
+                    noSet = false;
+            });
+        });
+    });
+    return noSet;
+}
+
 function isSet(A, B, C) {
+    if (A==B || A==C || B==C)
+        return false;
     if (!checkProperty(A.color, B.color, C.color))
         return false;
     if (!checkProperty(A.shape, B.shape, C.shape))
@@ -71,6 +89,8 @@ function isSet(A, B, C) {
 }
 
 function checkProperty(A, B, C) {
+    if (A<0 || B<0 || C<0)
+        return false;
     return (A==B)&&(B==C) || (A!=B)&&(A!=C)&&(B!=C);
 }
 
@@ -88,43 +108,104 @@ function generateCards() {
             }
         }
     }
+    emptyCard = new Card();
+    emptyCard.init(-1, -1, -1, -1, -1);
 }
 
-
 function setupBoard() {
-    board = new Array(game_height);
-    var tbody = game.appendChild(document.createElement("tbody"));
-    tbody.innerHTML = "";
+    board = new Array(game_height*game_width);
+    var tbody = $("<tbody>");
+    game.append(tbody);
 
     for (var y=0; y<game_height; y++) {
-        board[y] = new Array(game_width);
-        tbody.appendChild(document.createElement("tr"));
+        tbody.append($("<tr>"));
         for (var x=0; x<game_width; x++) {
-            board[y][x] = cards.splice(Math.floor(Math.random()*cards.length), 1)[0];
-            var td = document.createElement("td");
-            tbody.children[y].appendChild(td);
+            board[y*game_width + x] = cards.splice(Math.floor(Math.random()*cards.length), 1)[0];
+            tbody.children().eq(y).append($("<td>"));
         }
     }
 
     console.log(board);
+
+    var cards_replace = []
+    while (noSet()) {
+        var i_replace = Math.floor(Math.random()*board.length);
+        var card = board[i_replace];
+        cards_replace.push(card);
+        board[i_replace] = cards.splice(Math.floor(Math.random()*cards.length),1)[0];
+    }
+    cards = cards.concat(cards_replace);
+
+    $("td").click(selectCard);
     updateBoard();
 }
 
 function updateBoard() {
     for (var y=0; y<game_height; y++) {
         for (var x=0; x<game_width; x++) {
-            var card = board[y][x];
-            var element = game.firstElementChild.children[y].children[x];
-            element.className = card.classes();
-            element.innerHTML = "";
+            var card = board[y*game_width + x];
+            var element = game.children(":first").children().eq(y).children().eq(x);
+            element.empty().removeClass().addClass(card.classes()).attr("x", x).attr("y", y);
             for (var i=0; i<=card.number; i++) {
-                element.appendChild(document.createElement("div"));
+                element.append($("<div>"));
             }
         }
+    }
+}
+
+function selectCard() {
+    var x = Number($(this).attr("x"));
+    var y = Number($(this).attr("y"));
+    var card_nr = y*game_width + x;
+    if (!currentSet.includes(card_nr)) {
+        currentSet.push(card_nr);
+        $(this).addClass("selected");
+    } else {
+        currentSet.splice(currentSet.indexOf(card_nr), 1);
+        $(this).removeClass("selected");
+    }
+
+    if (currentSet.length==3) {
+        if (isSet(
+                board[currentSet[0]],
+                board[currentSet[1]],
+                board[currentSet[2]])) {
+            if (cards.length>0) {
+                for (var i=0; i<3; i++) {
+                    board[currentSet[i]] = cards.splice(Math.floor(Math.random()*cards.length),1)[0];
+                }
+            } else {
+                for (var i=0; i<3; i++) {
+                    board[currentSet[i]] = emptyCard;
+                }
+            }
+            var limit = 0;
+            if (cards.length==0) {
+                if (noSet())
+                    window.alert("no more sets");
+            } else {
+                while (noSet()) {
+                    for (var i=0; i<3; i++) {
+                        cards.push(board[currentSet[i]]);
+                    }
+                    for (var i=0; i<3; i++) {
+                        board[currentSet[i]] = cards.splice(Math.floor(Math.random()*cards.length),1)[0];
+                    }
+                    limit++;
+                    if (limit>1000) {
+                        window.alert("no more sets");
+                        break;
+                    }
+                }
+            }
+            updateBoard();
+
+        }
+        currentSet.length = 0;
+        $('td').removeClass("selected");
     }
 }
 
 generateCards();
 console.log(cards);
 setupBoard();
-
